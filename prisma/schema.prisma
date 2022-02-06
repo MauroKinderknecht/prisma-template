@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id          String       @id @default(uuid()) // identify a PK and autogenerate a uuid by default
+  phoneNumber String?      @unique // unique optional field
+  email       String       @unique // unique field
+  password    String
+  status      UserStatus   @default(ONBOARDING) // use an enum, set onboarding to default
+  createdAt   DateTime     @default(now()) // set the creation timestamp by default
+  updatedAt   DateTime     @updatedAt // u
+  posts       Post[] // many-to-one relation
+  profile     UserProfile? // one-to-one optional relation
+}
+
+model UserProfile {
+  firstName String
+  lastName  String
+  birthDate DateTime
+  user      User     @relation(fields: [userId], references: [id]) // one-to-one relation
+  userId    String   @unique // identify a FK for the user relation
+
+  @@unique([firstName, lastName])
+}
+
+model Post {
+  id         String         @id @default(uuid())
+  title      String
+  content    String?
+  authorId   String
+  author     User           @relation(fields: [authorId], references: [id])
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  categories PostCategory[]
+}
+
+// many to many relation needs an extra model
+model PostCategory {
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     String
+
+  @@id([postId, categoryId])
+}
+
+model Category {
+  id       String         @id @default(uuid())
+  category String
+  posts    PostCategory[]
+}
+
+enum UserStatus {
+  ONBOARDING
+  CONFIRMED
+  BLOCKED
+}
